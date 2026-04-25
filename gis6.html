@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescuePulse | Advanced Disaster Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --secondary: #3a7bd5;
+            --high: #ff4b2b;
+            --medium: #f9d423;
+            --low: #00b09b;
+            --dark-bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            background: radial-gradient(circle at top right, #1e3c72, #0f172a);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Radar Background */
+        .radar-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            border: 1px solid rgba(0, 210, 255, 0.1);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .radar-bg::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: pulse-ring 4s linear infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Navigation */
+        .nav {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(15px);
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--glass);
+        }
+
+        .nav button {
+            padding: 10px 18px;
+            color: white;
+            background: transparent;
+            border: 1px solid var(--glass);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .nav button.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+
+        /* Section Handling */
+        .section {
+            display: none;
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards & Components */
+        .form-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            padding: 35px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .request-card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e293b;
+            margin: 15px 0;
+            padding: 20px;
+            border-radius: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            transform: perspective(1000px);
+        }
+
+        .request-card:hover {
+            transform: perspective(1000px) scale(1.02) translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* Urgency Styles */
+        .urgency-high { border-left: 8px solid var(--high); animation: urgent-glow 1.5s infinite; }
+        .urgency-medium { border-left: 8px solid var(--medium); }
+        .urgency-low { border-left: 8px solid var(--low); }
+
+        @keyframes urgent-glow {
+            0% { box-shadow: 0 0 5px rgba(255, 75, 43, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(255, 75, 43, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(255, 75, 43, 0.2); }
+        }
+
+        /* Inputs */
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0 20px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        option { color: black; }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* SOS Flasher */
+        #sosOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 9999;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-weight: 900;
+            margin-left: 10px;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-delete {
+            background: rgba(255, 75, 43, 0.1);
+            color: var(--high);
+            border: 1px solid var(--high);
+        }
+
+        .btn-delete:hover {
+            background: var(--high);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="radar-bg"></div>
+    <div id="sosOverlay"></div>
+
+    <div class="nav">
+        <button id="nav-home" onclick="show('home')" class="active"><i class="fas fa-home"></i> Home</button>
+        <button id="nav-request" onclick="show('request')"><i class="fas fa-ambulance"></i> Request Form</button>
+        <button id="nav-dashboard" onclick="show('dashboard')"><i class="fas fa-satellite-dish"></i> Volunteer Dashboard</button>
+        <button id="nav-tracking" onclick="show('tracking')"><i class="fas fa-location-crosshairs"></i> Status Tracking</button>
+    </div>
+
+    <div id="home" class="section">
+        <div style="text-align: center; padding: 40px 0;">
+            <i class="fas fa-heartbeat" style="font-size: 4rem; color: var(--high); margin-bottom: 20px;"></i>
+            <h1 style="font-size: 3rem; margin: 0;">RescuePulse</h1>
+            <p style="opacity: 0.7; font-size: 1.2rem;">Real-time Disaster Response & Coordination</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 40px 0;">
+                <div class="form-card" style="padding: 20px;">
+                    <h2 id="stat-total" style="color: var(--primary); font-size: 2.2rem; margin: 0;">0</h2>
+                    <p style="margin: 5px 0; font-size: 0.9rem;">Signals Logged</p>
+                </div>
+                <div class="form-card" style="padding: 20px;">
+                    <h2 id="stat-active" style="color: var(--medium); font-size: 2.2rem; margin: 0;">0</h2>
+                    <p style="margin: 5px 0; font-size: 0.9rem;">In Progress</p>
+                </div>
+                <div class="form-card" style="padding: 20px;">
+                    <h2 id="stat-completed" style="color: var(--low); font-size: 2.2rem; margin: 0;">0</h2>
+                    <p style="margin: 5px 0; font-size: 0.9rem;">People Helped</p>
+                </div>
+            </div>
+
+            <button class="btn-submit" onclick="triggerSOS()" style="background: var(--high); margin-bottom: 20px;">
+                <i class="fas fa-signal"></i> ACTIVATE VISUAL SOS SIGNAL
+            </button>
+            <p style="font-size: 0.8rem; opacity: 0.5;">Flashes Morse Code SOS using your screen brightness</p>
+        </div>
+    </div>
+
+    <div id="request" class="section">
+        <div class="form-card">
+            <h2><i class="fas fa-broadcast-tower"></i> Emergency Broadcast</h2>
+            <p>Your GPS coordinates will be attached automatically.</p>
+            
+            <label>Identify</label>
+            <input id="name" placeholder="Name or 'Anonymous'">
+            
+            <label>Location Landmark</label>
+            <input id="location" placeholder="e.g. 2nd Floor, Sector 5 Mall">
+            
+            <label>Nature of Crisis</label>
+            <select id="type">
+                <option>Medical Emergency</option>
+                <option>Food Requirement</option>
+                <option>Rescue</option>
+                <option>Shelter</option>
+            </select>
+
+            <label>Urgency Level</label>
+            <select id="urgency">
+                <option value="high">Critical - Life Threatening</option>
+                <option value="medium">Urgent - Serious Injury/Risk</option>
+                <option value="low">Stable - Assistance Needed</option>
+            </select>
+
+            <button class="btn-submit" onclick="submitRequest()">SEND EMERGENCY SIGNAL</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fas fa-shield-alt"></i> Incident Command</h2>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="clearAllData()" style="padding: 8px 15px; background: rgba(255, 75, 43, 0.2); border: 1px solid var(--high); color: white; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-trash-sweep"></i> Wipe All
+                </button>
+                <button onclick="loadRequests()" style="padding: 8px 15px; background: none; border: 1px solid white; color: white; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="requestList"></div>
+    </div>
+
+    <div id="tracking" class="section">
+        <div class="form-card">
+            <h2>Track Live Status</h2>
+            <div style="display: flex; gap: 10px;">
+                <input id="trackId" placeholder="Enter Reference ID">
+                <button class="btn-submit" style="width: 120px;" onclick="track()">Find</button>
+            </div>
+            <div id="trackResult"></div>
+        </div>
+    </div>
+
+<script>
+    let requests = JSON.parse(localStorage.getItem("rescue_requests")) || [];
+
+    function show(sectionId) {
+        document.querySelectorAll(".section").forEach(s => s.style.display = "none");
+        document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+        
+        document.getElementById(sectionId).style.display = "block";
+        document.getElementById("nav-" + sectionId).classList.add("active");
+        
+        if (sectionId === "dashboard") loadRequests();
+        if (sectionId === "home") updateStats();
+    }
+
+    function updateStats() {
+        document.getElementById("stat-total").innerText = requests.length;
+        // Active means not completed
+        document.getElementById("stat-active").innerText = requests.filter(r => r.status !== 'Completed').length;
+        // PEOPLE HELPED count
+        document.getElementById("stat-completed").innerText = requests.filter(r => r.status === 'Completed').length;
+    }
+
+    function submitRequest() {
+        const name = document.getElementById("name").value || "Anonymous";
+        const loc = document.getElementById("location").value;
+        
+        if(!loc) {
+            alert("Please provide a location!");
+            return;
+        }
+
+        const req = {
+            id: Math.floor(100000 + Math.random() * 900000),
+            name: name,
+            location: loc,
+            type: document.getElementById("type").value,
+            urgency: document.getElementById("urgency").value,
+            status: "Pending",
+            time: new Date().toLocaleTimeString()
+        };
+
+        requests.unshift(req);
+        localStorage.setItem("rescue_requests", JSON.stringify(requests));
+        
+        alert("SIGNAL BROADCASTED!\nTracking ID: " + req.id);
+        show('home');
+        
+        document.getElementById("location").value = "";
+    }
+
+    function loadRequests() {
+        const list = document.getElementById("requestList");
+        list.innerHTML = requests.length === 0 ? "<div class='form-card' style='text-align:center;'>No active signals in your perimeter.</div>" : "";
+
+        requests.forEach(r => {
+            const uClass = `urgency-${r.urgency}`;
+            list.innerHTML += `
+                <div class="request-card ${uClass}">
+                    <div style="flex: 1;">
+                        <h3 style="margin:0">${r.name} 
+                            <span class="badge" style="background: ${r.status === 'Pending' ? '#666' : (r.status === 'Completed' ? '#00b09b' : '#00d2ff')}">${r.status}</span>
+                        </h3>
+                        <p style="margin: 8px 0; font-size: 0.9rem;"><i class="fas fa-map-marker-alt" style="color:var(--high)"></i> ${r.location}</p>
+                        <div style="font-size: 0.75rem; color: #666; font-weight: bold;">
+                            ${r.type.toUpperCase()} • ${r.time}
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 15px;">
+                        <button class="action-btn" title="In Progress" onclick="updateStatus(${r.id}, 'In Progress')" style="background:#3a7bd5;"><i class="fas fa-check"></i></button>
+                        <button class="action-btn" title="Complete" onclick="updateStatus(${r.id}, 'Completed')" style="background:#00b09b;"><i class="fas fa-flag-checkered"></i></button>
+                        <button class="action-btn btn-delete" title="Remove Record" onclick="deleteRequest(${r.id})"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function updateStatus(id, newStatus) {
+        const index = requests.findIndex(r => r.id === id);
+        if (index !== -1) {
+            requests[index].status = newStatus;
+            localStorage.setItem("rescue_requests", JSON.stringify(requests));
+            loadRequests();
+            updateStats(); // Force stat update immediately
+        }
+    }
+
+    function deleteRequest(id) {
+        if(confirm("Are you sure you want to remove this emergency record from the database?")) {
+            requests = requests.filter(r => r.id !== id);
+            localStorage.setItem("rescue_requests", JSON.stringify(requests));
+            loadRequests();
+            updateStats();
+        }
+    }
+
+    function clearAllData() {
+        if(confirm("DANGER: This will delete ALL records permanently. Proceed?")) {
+            requests = [];
+            localStorage.removeItem("rescue_requests");
+            loadRequests();
+            updateStats();
+        }
+    }
+
+    function triggerSOS() {
+        const overlay = document.getElementById("sosOverlay");
+        overlay.style.display = "block";
+        const sequence = [200, 200, 200, 200, 200, 200, 600, 200, 600, 200, 600, 200, 200, 200, 200, 200, 200, 1000];
+        let i = 0;
+        function flash() {
+            if (i >= sequence.length) {
+                overlay.style.display = "none";
+                return;
+            }
+            overlay.style.background = (i % 2 === 0) ? "white" : "black";
+            setTimeout(() => { i++; flash(); }, sequence[i]);
+        }
+        flash();
+    }
+
+    function track() {
+        const id = document.getElementById("trackId").value;
+        const resultDiv = document.getElementById("trackResult");
+        const req = requests.find(r => r.id == id);
+        resultDiv.style.display = "block";
+        resultDiv.style.marginTop = "20px";
+        if (req) {
+            const progress = req.status === 'Pending' ? '20%' : (req.status === 'In Progress' ? '60%' : '100%');
+            resultDiv.innerHTML = `
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+                    <h4 style="margin:0; color:var(--primary)">Request #ID-${req.id}</h4>
+                    <p>Status: <strong>${req.status}</strong></p>
+                    <div style="width:100%; height:8px; background:#334155; border-radius:10px;">
+                        <div style="width:${progress}; height:100%; background:var(--primary); border-radius:10px; transition: 1s width;"></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = "<p style='color:var(--high)'>No signal found with that ID.</p>";
+        }
+    }
+
+    show("home");
+</script>
+
+</body>
+</html>
